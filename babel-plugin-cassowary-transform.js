@@ -9,10 +9,6 @@ const ADD_CONSTRAINT = 'addConstraint';
 const IS_BINDING_FOR_CONSTRAINT_VAR = 'IS_BINDING_FOR_CONSTRAINT_VAR';
 
 export default function({ types: t, template, traverse }) {
-  function getDefiningVar(path) {
-    return;
-  }
-  
   function isVariable(path) {
     // - filter out with negative conditions
     if(t.isLabeledStatement(path.parent) && path.parentKey === 'label') return false;
@@ -38,9 +34,8 @@ export default function({ types: t, template, traverse }) {
   function addCustomTemplate(file, name) {
     let declar = file.declarations[name];
     if (declar) return declar;
-  
-    let identifier = file.declarations[name] = file.addImport("https://lively-kernel.org/lively4/programming-constraints-plain/cassowary.js", name, name);
-    return identifier;
+
+    return file.declarations[name] = file.addImport("https://lively-kernel.org/lively4/programming-constraints-plain/cassowary.js", name, name);
   }
   
   function getIdentifierForExplicitScopeObject(parentWithScope) {
@@ -49,7 +44,7 @@ export default function({ types: t, template, traverse }) {
           return bindings[key].path &&
               bindings[key].path.node &&
               bindings[key].path.node.id &&
-              bindings[key].path.node.id[FLAG_GENERATED_SCOPE_OBJECT] // should actually be IS_EXPLICIT_SCOPE_OBJECT
+              bindings[key].path.node.id[FLAG_GENERATED_SCOPE_OBJECT];
       });
   
       let uniqueIdentifier;
@@ -148,7 +143,7 @@ export default function({ types: t, template, traverse }) {
                 scope,
                 t.stringLiteral(ref.node.name)
               ]
-            ))
+            ));
             ref.skip();
           }
         
@@ -247,7 +242,6 @@ export default function({ types: t, template, traverse }) {
           });
           
           bindings.forEach(binding => {
-            console.log(binding)
             let init = binding.path.get('init'),
                 scope = getIdentifierForExplicitScopeObject(binding.path);
             init.replaceWith(t.callExpression(

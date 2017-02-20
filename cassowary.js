@@ -7,16 +7,16 @@ export function newConstraintVar(scope, name, init) {
 }
 
 export function setConstraintVar(scope, name, operator, value) {
-  var cVar = solver.getConstraintVariableFor(scope, name, () => {
+  let cVar = solver.getConstraintVariableFor(scope, name, () => {
     throw new Error('tried to assign to uninitialzed variable ' + name);
   });
-  var constr = cVar.cnEquals(value);
-  constr.changeStrength(Cassowary.ClStrength.required);
+  let constraint = cVar.cnEquals(value);
+  constraint.changeStrength(Cassowary.ClStrength.required);
   try {
-    getSolverInstance().addConstraint(constr);
+    getSolverInstance().addConstraint(constraint);
     getSolverInstance().solveConstraints();
   } finally {
-    getSolverInstance().removeConstraint(constr);
+    getSolverInstance().removeConstraint(constraint);
   }
   
   return getConstraintVar(scope, name);
