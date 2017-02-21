@@ -1,6 +1,3 @@
-const FLAG_GENERATED_SCOPE_OBJECT = Symbol('FLAG: generated scope object');
-const FLAG_SHOULD_NOT_REWRITE_IDENTIFIER = Symbol('FLAG: should not rewrite identifier');
-
 const NEW_CONSTRAINT_VAR = 'newConstraintVar';
 const SET_CONSTRAINT_VAR = 'setConstraintVar';
 const ADD_CONSTRAINT = 'addConstraint';
@@ -35,51 +32,6 @@ export default function({ types: t, template, traverse }) {
         if (declar) return declar;
 
         return file.declarations[name] = file.addImport("https://lively-kernel.org/lively4/programming-constraints-plain/cassowary.js", name, name);
-    }
-
-    function getIdentifierForExplicitScopeObject(parentWithScope) {
-        let bindings = parentWithScope.scope.bindings;
-        let scopeName = Object.keys(bindings).find(key => {
-            return bindings[key].path &&
-                bindings[key].path.node &&
-                bindings[key].path.node.id &&
-                bindings[key].path.node.id[FLAG_GENERATED_SCOPE_OBJECT];
-        });
-
-        let uniqueIdentifier;
-        if(scopeName) {
-            uniqueIdentifier = t.identifier(scopeName);
-        } else {
-            uniqueIdentifier = parentWithScope.scope.generateUidIdentifier('scope');
-            uniqueIdentifier[FLAG_GENERATED_SCOPE_OBJECT] = true;
-
-            parentWithScope.scope.push({
-                kind: 'let',
-                id: uniqueIdentifier,
-                init: t.objectExpression([])
-            });
-        }
-        uniqueIdentifier[FLAG_SHOULD_NOT_REWRITE_IDENTIFIER] = true;
-        return uniqueIdentifier;
-    }
-
-    function getScopeIdentifierForVariable(path) {
-        if(path.scope.hasBinding(path.node.name)) {
-            //logIdentifier('get local var', path)
-            path.node[FLAG_SHOULD_NOT_REWRITE_IDENTIFIER] = true;
-
-            let parentWithScope = path.findParent(par =>
-                par.scope.hasOwnBinding(path.node.name)
-            );
-            if(parentWithScope) {
-                return getIdentifierForExplicitScopeObject(parentWithScope);
-            }
-        } else {
-            throw new Error('globals not supported yet for '+path.node.name);
-            //logIdentifier('get global var', path);
-            //path.node[FLAG_SHOULD_NOT_REWRITE_IDENTIFIER] = true;
-            //return t.identifier('window');
-        }
     }
 
     function buildLinearEquation(node) {
@@ -175,15 +127,13 @@ export default function({ types: t, template, traverse }) {
                         Identifier(path) {
                             if(!isVariable(path)) return;
 
-                            let pattern = (path);
-                            if(pattern.parentPath.isAssignmentExpression() && pattern.parentKey === 'left') {
-                                let parent = pattern.parentPath;
+                            if(path.parentPath.isAssignmentExpression() && path.parentKey === 'left') {
+                                let parent = path.parentPath;
                                 let par = path.find(parent => parent.scope.hasOwnBinding(path.node.name));
                                 let binding = par.scope.getBinding(path.node.name);
-                                let scope = getIdentifierForExplicitScopeObject(binding.path);
 
                                 if(binding[IS_BINDING_FOR_CONSTRAINT_VAR]) {
-                                    pattern.parentPath.replaceWith(t.callExpression(
+                                    path.parentPath.replaceWith(t.callExpression(
                                         addCustomTemplate(state.file, SET_CONSTRAINT_VAR),
                                         [
                                             binding.path.get('id').node,
@@ -236,12 +186,10 @@ export default function({ types: t, template, traverse }) {
                     });
 
                     bindings.forEach(binding => {
-                        let init = binding.path.get('init'),
-                            scope = getIdentifierForExplicitScopeObject(binding.path);
+                        let init = binding.path.get('init');
                         init.replaceWith(t.callExpression(
                             addCustomTemplate(state.file, NEW_CONSTRAINT_VAR),
                             [
-                                scope,
                                 t.stringLiteral(binding.path.get('id').node.name),
                                 init.node
                             ]

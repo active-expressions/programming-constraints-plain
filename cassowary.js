@@ -1,7 +1,7 @@
 import * as Cassowary from './lib/dwarfcassowary-lib.js';
 
-export function newConstraintVar(scope, name, init) {
-    return getSolverInstance().getConstraintVariableFor(scope, name, () =>
+export function newConstraintVar(name, init) {
+    return getSolverInstance().getConstraintVariableFor({}, name, () =>
         new Cassowary.ClVariable(name, init)
     );
 }
