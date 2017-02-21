@@ -11,7 +11,7 @@ export function setConstraintVar(scope, name, operator, value) {
     throw new Error('tried to assign to uninitialzed variable ' + name);
   });
   let constraint = cVar.cnEquals(value);
-  constraint.changeStrength(Cassowary.ClStrength.required);
+  constraint.changeStrength(Cassowary.ClStrength.strong);
   try {
     getSolverInstance().addConstraint(constraint);
     getSolverInstance().solveConstraints();
@@ -19,22 +19,15 @@ export function setConstraintVar(scope, name, operator, value) {
     getSolverInstance().removeConstraint(constraint);
   }
   
-  return getConstraintVar(scope, name);
-}
-
-export function getConstraintVar(scope, name) {
-  return getSolverInstance().getConstraintVariableFor(scope, name, () => {
-    throw new Error('tried to access uninitialzed variable ' + name);
-  }).value();
+  return cVar.value();
 }
 
 function getSolverInstance() {
   return Cassowary.ClSimplexSolver.getInstance();
-
 }
 
 export function addConstraint(constraint) {
-  constraint.changeStrength(Cassowary.ClStrength.strong);
+  constraint.changeStrength(Cassowary.ClStrength.required);
   getSolverInstance().addConstraint(constraint);
   getSolverInstance().solveConstraints();
 }
