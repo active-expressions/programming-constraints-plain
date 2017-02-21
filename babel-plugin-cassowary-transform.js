@@ -170,11 +170,11 @@ export default function({ types: t, template, traverse }) {
                     });
                     bindings.forEach(b => b[IS_BINDING_FOR_CONSTRAINT_VAR] = true);
 
+                    // assigning to a reference
                     path.traverse({
                         Identifier(path) {
                             if(!isVariable(path)) return;
 
-                            // special case of assigning to a reference
                             let pattern = (path);
                             if(pattern.parentPath.isAssignmentExpression() && pattern.parentKey === 'left') {
                                 let parent = pattern.parentPath;
@@ -186,8 +186,7 @@ export default function({ types: t, template, traverse }) {
                                     pattern.parentPath.replaceWith(t.callExpression(
                                         addCustomTemplate(state.file, SET_CONSTRAINT_VAR),
                                         [
-                                            scope,
-                                            t.stringLiteral(binding.path.get('id').node.name),
+                                            binding.path.get('id').node,
                                             t.stringLiteral(parent.node.operator),
                                             parent.get('right').node
                                         ]

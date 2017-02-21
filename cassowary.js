@@ -1,33 +1,60 @@
 import * as Cassowary from './lib/dwarfcassowary-lib.js';
 
 export function newConstraintVar(scope, name, init) {
-  return getSolverInstance().getConstraintVariableFor(scope, name, () =>
-      new Cassowary.ClVariable(name, init)
-  );
+    return getSolverInstance().getConstraintVariableFor(scope, name, () =>
+        new Cassowary.ClVariable(name, init)
+    );
 }
 
-export function setConstraintVar(scope, name, operator, value) {
-  let cVar = solver.getConstraintVariableFor(scope, name, () => {
-    throw new Error('tried to assign to uninitialzed variable ' + name);
-  });
-  let constraint = cVar.cnEquals(value);
-  constraint.changeStrength(Cassowary.ClStrength.strong);
-  try {
-    getSolverInstance().addConstraint(constraint);
-    getSolverInstance().solveConstraints();
-  } finally {
-    getSolverInstance().removeConstraint(constraint);
-  }
-  
-  return cVar.value();
+function getTargetValue(constraintVariable, operator, value) {
+    let currentValue = constraintVariable.value();
+    let targetValue;
+    switch (operator) {
+        case "=":
+            return value;
+        case "+=":
+            return currentValue + value;
+        case "-=":
+            return currentValue - value;
+        case "*=":
+            return currentValue * value;
+        case "/=":
+            return currentValue / value;
+        case "%=":
+            return currentValue % value;
+        case "**=":
+            return currentValue ** value;
+        case "<<=":
+            return currentValue << value;
+        case ">>=":
+            return currentValue >> value;
+        case ">>>=":
+            return currentValue >>> value;
+        default:
+            throw new Error(`Unknown assigment operator '${operator}' for ${constraintVariable} with value ${value}.`);
+    }
+}
+
+export function setConstraintVar(constraintVariable, operator, value) {
+    let targetValue = getTargetValue(constraintVariable, operator, value);
+    let constraint = constraintVariable.cnEquals(targetValue);
+    constraint.changeStrength(Cassowary.ClStrength.strong);
+    try {
+        getSolverInstance().addConstraint(constraint);
+        getSolverInstance().solveConstraints();
+    } finally {
+        getSolverInstance().removeConstraint(constraint);
+    }
+
+    return constraintVariable.value();
 }
 
 function getSolverInstance() {
-  return Cassowary.ClSimplexSolver.getInstance();
+    return Cassowary.ClSimplexSolver.getInstance();
 }
 
 export function addConstraint(constraint) {
-  constraint.changeStrength(Cassowary.ClStrength.required);
-  getSolverInstance().addConstraint(constraint);
-  getSolverInstance().solveConstraints();
+    constraint.changeStrength(Cassowary.ClStrength.required);
+    getSolverInstance().addConstraint(constraint);
+    getSolverInstance().solveConstraints();
 }
